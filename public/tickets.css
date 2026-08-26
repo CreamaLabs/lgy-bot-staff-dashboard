@@ -14,6 +14,14 @@
 .ticket-message p { margin: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; line-height: 1.5; }
 .ticket-message a { display: block; color: #8a650b; font-size: 9px; }
 .danger-text { color: #b52f3c; }
+.presence-box { margin: 12px 15px; padding: 13px; border: 1px solid var(--line); border-radius: 10px; background: #fafaf8; }
+.presence-heading { display: flex; align-items: center; justify-content: space-between; }
+.presence-heading h3 { margin: 0; font-size: 13px; }
+.presence-heading > strong { min-width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; color: #237448; background: #e2f5e9; }
+.presence-list { display: grid; gap: 7px; margin-top: 12px; }
+.presence-list div { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 700; }
+.presence-list i { width: 7px; height: 7px; border-radius: 50%; background: #43c978; box-shadow: 0 0 0 3px #43c97818; }
+.presence-list > span { color: var(--muted); font-size: 9px; }
 .archive-heading { gap: 18px; }
 .archive-tools { display: flex; align-items: center; gap: 14px; }
 .archive-tools input { width: min(390px, 38vw); margin: 0; }

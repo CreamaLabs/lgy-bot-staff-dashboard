@@ -2,6 +2,7 @@ const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 let applications = [];
 let tickets = [];
+let presenceTimer;
 
 function toast(message, error = false) {
   const element = $('#toast'); element.textContent = message; element.className = `toast show${error ? ' error' : ''}`;
@@ -59,6 +60,17 @@ async function loadTickets(showToast = false) {
   catch (error) { toast(error.message, true); }
 }
 
+async function updatePresence() {
+  try {
+    await api('/api/presence', { method: 'POST', body: '{}' });
+    const data = await api('/api/presence');
+    $('#connected-admin-count').textContent = data.count || 0;
+    $('#connected-admin-list').innerHTML = (data.connected || []).length
+      ? data.connected.map((staff) => `<div><i></i><span>${escapeHtml(staff.displayName || staff.username)}</span></div>`).join('')
+      : '<span>No active dashboard admins.</span>';
+  } catch (error) { console.warn('Presence update failed:', error.message); }
+}
+
 function updateStats() {
   const weekAgo = Date.now() - 7 * 86400000;
   $('#pending-count').textContent = applications.filter((app) => app.status === 'pending').length;
@@ -92,7 +104,8 @@ async function init() {
     const session = await api('/api/session'); const name = session.user.displayName || session.user.username;
     $('#staff-name').textContent = name; $('#staff-initials').textContent = name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase(); $('#greeting').textContent = `Welcome, ${name}.`;
     $$('[data-owner-only]').forEach((element) => element.classList.toggle('hidden', !session.isOwner));
-    $('#login-screen').classList.add('hidden'); $('#dashboard').classList.remove('hidden'); await Promise.all([loadApplications(), loadTickets()]);
+    $('#login-screen').classList.add('hidden'); $('#dashboard').classList.remove('hidden'); await Promise.all([loadApplications(), loadTickets(), updatePresence()]);
+    clearInterval(presenceTimer); presenceTimer = setInterval(updatePresence, 30000);
   } catch { $('#login-screen').classList.remove('hidden'); }
 }
 
