@@ -29,7 +29,12 @@ function escapeHtml(value) { const div = document.createElement('div'); div.text
 function renderApplications() {
   const body = $('#applications-body');
   if (!applications.length) { body.innerHTML = '<tr><td colspan="5" class="empty-state">No synchronized applications yet. Restart LGY Bot after installing its dashboard update.</td></tr>'; return; }
-  body.innerHTML = applications.slice(0, 25).map((app) => `<tr><td><em>#${String(app.id).padStart(4, '0')}</em><strong>${escapeHtml(`${app.firstName || ''} ${app.lastName || ''}`.trim())}</strong></td><td>${formatAge(app.submittedAt)}</td><td><span class="count">${Array.isArray(app.vouches) ? app.vouches.length : 0}</span></td><td><span class="pill ${app.status === 'denied' ? 'denied-pill' : app.status === 'approved' ? 'approved-pill' : ''}">${escapeHtml(app.status || 'pending')}</span></td><td>${app.status === 'pending' ? `<button class="review" data-review="${app.id}">Review</button>` : ''}</td></tr>`).join('');
+  const prioritized = [...applications].sort((a, b) => {
+    const aPending = (a.status || 'pending') === 'pending' ? 0 : 1;
+    const bPending = (b.status || 'pending') === 'pending' ? 0 : 1;
+    return aPending - bPending || Number(b.submittedAt || 0) - Number(a.submittedAt || 0);
+  });
+  body.innerHTML = prioritized.slice(0, 25).map((app) => `<tr><td><em>#${String(app.id).padStart(4, '0')}</em><strong>${escapeHtml(`${app.firstName || ''} ${app.lastName || ''}`.trim())}</strong></td><td>${formatAge(app.submittedAt)}</td><td><span class="count">${Array.isArray(app.vouches) ? app.vouches.length : 0}</span></td><td><span class="pill ${app.status === 'denied' ? 'denied-pill' : app.status === 'approved' ? 'approved-pill' : ''}">${escapeHtml(app.status || 'pending')}</span></td><td>${app.status === 'pending' ? `<button class="review" data-review="${app.id}">Review</button>` : ''}</td></tr>`).join('');
   $$('[data-review]').forEach((button) => button.addEventListener('click', () => openReview(button.dataset.review)));
 }
 
@@ -56,6 +61,16 @@ function renderTickets() {
   list.innerHTML = visible.map((ticket, index) => `<button data-ticket-index="${index}"><strong>${escapeHtml(ticket.channelName)}</strong><span>${escapeHtml(ticket.categoryLabel || ticket.categoryId)}</span><small>${ticketStatusLabel(ticket.dashboardStatus)}</small></button>`).join('');
   $$('[data-ticket-index]').forEach((button) => button.addEventListener('click', () => renderTicketConversation(visible[Number(button.dataset.ticketIndex)])));
   renderTicketConversation(visible[0]);
+}
+
+function renderTicketCategoryCounts() {
+  $$('[data-ticket-category]').forEach((button) => {
+    const category = button.dataset.ticketCategory;
+    const count = category === 'all' ? tickets.length : tickets.filter((ticket) => ticket.categoryId === category).length;
+    let badge = button.querySelector('.ticket-category-count');
+    if (!badge) { badge = document.createElement('b'); badge.className = 'ticket-category-count'; button.appendChild(badge); }
+    badge.textContent = count;
+  });
 }
 
 function reportPeriod() {
@@ -104,7 +119,7 @@ function printReport() {
 }
 
 async function loadTickets(showToast = false) {
-  try { const data = await api('/api/tickets'); tickets = data.tickets || []; renderTickets(); if (showToast) toast('Ticket conversations refreshed.'); }
+  try { const data = await api('/api/tickets'); tickets = data.tickets || []; renderTickets(); renderTicketCategoryCounts(); updateStats(); if (showToast) toast('Ticket conversations refreshed.'); }
   catch (error) { toast(error.message, true); }
 }
 
@@ -124,6 +139,10 @@ function updateStats() {
   $('#pending-count').textContent = applications.filter((app) => app.status === 'pending').length;
   $('#approved-count').textContent = applications.filter((app) => app.status === 'approved' && Number(app.reviewedAt) >= weekAgo).length;
   $('#denied-count').textContent = applications.filter((app) => app.status === 'denied' && Number(app.reviewedAt) >= weekAgo).length;
+  $('#approved-total').textContent = applications.filter((app) => app.status === 'approved').length;
+  $('#denied-total').textContent = applications.filter((app) => app.status === 'denied').length;
+  $('#open-ticket-count').textContent = tickets.filter((ticket) => ticket.dashboardStatus !== 'closed').length;
+  $('#closed-ticket-count').textContent = tickets.filter((ticket) => ticket.dashboardStatus === 'closed').length;
 }
 
 async function loadApplications(showToast = false) {

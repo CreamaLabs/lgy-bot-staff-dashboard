@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="Secure LGY Bot staff console for Ligaya Street RP.">
-  <title>LGY Bot — Staff Console</title><link rel="icon" href="/lgy-bot.png"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/tickets.css">
+  <title>LGY Bot — Staff Console</title><link rel="icon" href="/lgy-bot.png"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/tickets.css"><link rel="stylesheet" href="/overview.css">
 </head>
 <body>
   <section id="login-screen" class="login-screen">
@@ -25,12 +25,12 @@
         <section class="hero-card overview-view"><div><p class="eyebrow gold">Secure staff portal</p><h2 id="greeting">Welcome, Staff Team.</h2><p>Review live whitelist applications and send approved commands securely to LGY Bot.</p></div><img src="/lgy-bot.png" alt=""></section>
         <section class="stats-grid overview-view" aria-label="Server overview">
           <article><b>♙</b><div><span>Pending applications</span><strong id="pending-count">—</strong><small>Awaiting staff review</small></div></article>
-          <article><b>✓</b><div><span>Approved this week</span><strong id="approved-count">—</strong><small class="positive">Live from LGY Bot</small></div></article>
-          <article><b>✕</b><div><span>Denied this week</span><strong id="denied-count">—</strong><small>Recorded decisions</small></div></article>
+          <article class="summary-card"><b>✓</b><div class="summary-card-content"><span>Whitelist decisions</span><div class="summary-pairs"><div><small>Approved this week</small><strong id="approved-count">—</strong><small>All time: <b id="approved-total">—</b></small></div><div><small>Denied this week</small><strong id="denied-count">—</strong><small>All time: <b id="denied-total">—</b></small></div></div></div></article>
+          <article class="summary-card ticket-summary-card"><b>◇</b><div class="summary-card-content"><span>Support tickets</span><div class="summary-pairs"><div><small>Open / In progress</small><strong id="open-ticket-count">—</strong><small>Needs staff attention</small></div><div><small>Closed</small><strong id="closed-ticket-count">—</strong><small>All recorded tickets</small></div></div></div></article>
           <article><b class="live">●</b><div><span>Bot synchronization</span><strong id="sync-state">Waiting</strong><small id="sync-time">Bot connection required</small></div></article>
         </section>
         <div class="dashboard-grid overview-view">
-          <section class="panel applications-panel"><div class="panel-heading"><div><p class="eyebrow">Whitelist queue</p><h3>Recent applications</h3></div><button id="refresh-apps" class="text-button">Refresh ↻</button></div><div class="table-wrap"><table><thead><tr><th>Applicant</th><th>Submitted</th><th>Vouches</th><th>Status</th><th></th></tr></thead><tbody id="applications-body"><tr><td colspan="5" class="empty-state">Waiting for LGY Bot to synchronize applications…</td></tr></tbody></table></div></section>
+          <section class="panel applications-panel"><div class="panel-heading"><div><p class="eyebrow">Whitelist queue</p><h3>Applications requiring follow-up</h3></div><button id="refresh-apps" class="text-button">Refresh ↻</button></div><div class="table-wrap"><table><thead><tr><th>Applicant</th><th>Submitted</th><th>Vouches</th><th>Status</th><th></th></tr></thead><tbody id="applications-body"><tr><td colspan="5" class="empty-state">Waiting for LGY Bot to synchronize applications…</td></tr></tbody></table></div></section>
           <aside class="panel quick-panel"><div class="panel-heading"><div><p class="eyebrow">Discord tools</p><h3>Quick controls</h3></div></div>
             <div class="presence-box"><div class="presence-heading"><div><p class="eyebrow">Dashboard presence</p><h3>Connected admins</h3></div><strong id="connected-admin-count">0</strong></div><div id="connected-admin-list" class="presence-list"><span>Checking staff presence…</span></div></div>
             <button data-command="post_apply_panel"><span>◫</span><div><strong>Post whitelist panel</strong><small>Publish a fresh application panel</small></div><b>→</b></button>

@@ -1,0 +1,47 @@
+.stats-grid .summary-card {
+  align-items: flex-start;
+}
+
+.summary-card-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.summary-pairs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.summary-pairs > div + div {
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+
+.stats-grid .summary-pairs strong {
+  margin: 3px 0;
+  font-size: 21px;
+}
+
+.stats-grid .summary-pairs small {
+  line-height: 1.35;
+}
+
+.stats-grid .summary-pairs small > b {
+  display: inline;
+  color: #34353a;
+  font-size: 9px;
+}
+
+@media (max-width: 420px) {
+  .summary-pairs {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-pairs > div + div {
+    padding: 9px 0 0;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+}
