@@ -30,12 +30,12 @@ function renderApplications() {
   $$('[data-review]').forEach((button) => button.addEventListener('click', () => openReview(button.dataset.review)));
 }
 
-function renderPendingApplications() {
-  const body = $('#pending-applications-body');
-  const pending = applications.filter((app) => app.status === 'pending');
-  if (!pending.length) { body.innerHTML = '<tr><td colspan="5" class="empty-state">No whitelist applications are currently awaiting action.</td></tr>'; return; }
-  body.innerHTML = pending.map((app) => `<tr><td><em>#${String(app.id).padStart(4, '0')}</em><strong>${escapeHtml(`${app.firstName || ''} ${app.lastName || ''}`.trim())}</strong></td><td>${formatAge(app.submittedAt)}</td><td><span class="count">${Array.isArray(app.vouches) ? app.vouches.length : 0}</span></td><td><span class="pill">Pending</span></td><td><button class="review" data-pending-review="${app.id}">Review</button></td></tr>`).join('');
-  $$('[data-pending-review]').forEach((button) => button.addEventListener('click', () => openReview(button.dataset.pendingReview)));
+function renderWhitelistArchive() {
+  const body = $('#whitelist-archive-body');
+  const query = ($('#whitelist-search')?.value || '').trim().toLowerCase();
+  const visible = applications.filter((app) => [app.id, app.firstName, app.lastName, app.discordUsername, app.applicantId, app.steamProfileUrl, app.steamId64, app.status].join(' ').toLowerCase().includes(query));
+  if (!visible.length) { body.innerHTML = `<tr><td colspan="7" class="empty-state">${query ? 'No whitelist request matches your search.' : 'No submitted whitelist requests yet.'}</td></tr>`; return; }
+  body.innerHTML = visible.map((app) => `<tr><td><em>#${String(app.id).padStart(4, '0')}</em><strong>${escapeHtml(`${app.firstName || ''} ${app.lastName || ''}`.trim())}</strong></td><td>${formatAge(app.submittedAt)}</td><td>${escapeHtml(app.discordUsername || '—')}</td><td><code>${escapeHtml(app.applicantId || '—')}</code></td><td>${app.steamProfileUrl ? `<a href="${escapeHtml(app.steamProfileUrl)}" target="_blank" rel="noopener">${escapeHtml(app.steamProfileUrl)}</a>` : '—'}</td><td><span class="count">${Array.isArray(app.vouches) ? app.vouches.length : 0}</span></td><td><span class="pill ${app.status === 'denied' ? 'denied-pill' : app.status === 'approved' ? 'approved-pill' : ''}">${escapeHtml(app.status || 'pending')}</span></td></tr>`).join('');
 }
 
 function ticketStatusLabel(status) { return status === 'in_progress' ? 'In progress' : status === 'closed' ? 'Closed' : 'Open'; }
@@ -68,7 +68,7 @@ function updateStats() {
 
 async function loadApplications(showToast = false) {
   try {
-    const data = await api('/api/applications'); applications = data.applications || []; renderApplications(); renderPendingApplications(); updateStats();
+    const data = await api('/api/applications'); applications = data.applications || []; renderApplications(); renderWhitelistArchive(); updateStats();
     $('#sync-state').textContent = data.synced ? 'Live' : 'Waiting'; $('#sync-time').textContent = data.synced ? 'Secure bridge connected' : 'Bot restart required';
     $('#connection-label').textContent = data.synced ? 'LGY Bot synchronized' : 'Waiting for LGY Bot'; $('#connection-note').textContent = data.synced ? `${applications.length} records available` : 'Install the Bot-Hosting update';
     if (showToast) toast('Application list refreshed.');
@@ -109,6 +109,7 @@ $$('[data-view]').forEach((button) => button.addEventListener('click', () => {
 $$('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => button.closest('dialog')?.close()));
 $('#refresh-apps').addEventListener('click', () => loadApplications(true));
 $('#refresh-whitelist').addEventListener('click', () => loadApplications(true));
+$('#whitelist-search').addEventListener('input', renderWhitelistArchive);
 $('#refresh-tickets').addEventListener('click', () => loadTickets(true));
 $('#approve-button').addEventListener('click', () => queueCommand('approve_application', { applicationId: $('#review-id').value }));
 $('#deny-button').addEventListener('click', () => { const reason = $('#denial-reason').value.trim(); if (!reason) return toast('Enter a denial reason first.', true); queueCommand('deny_application', { applicationId: $('#review-id').value, reason }); });

@@ -13,7 +13,7 @@
     <aside class="sidebar">
       <div class="brand"><img src="/lgy-bot.png" alt="LGY Bot"><div><strong>LGY Bot</strong><span>Staff Console</span></div></div>
       <nav aria-label="Dashboard navigation"><p class="nav-label">Workspace</p>
-        <button class="nav-item active" data-view="overview"><span>▦</span>Overview</button><button class="nav-item" data-view="whitelist"><span>♙</span>Whitelist</button><button class="nav-item" data-command="post_apply_panel"><span>◫</span>Panel Manager</button><button class="nav-item" data-modal="announcement-modal"><span>◉</span>Announcements</button><button class="nav-item" data-view="tickets"><span>◇</span>Tickets</button>
+        <button class="nav-item active" data-view="overview"><span>▦</span>Overview</button><button class="nav-item" data-view="whitelist"><span>♙</span>Whitelist</button><button class="nav-item" data-modal="announcement-modal"><span>◉</span>Announcements</button><button class="nav-item" data-view="tickets"><span>◇</span>Tickets</button>
       </nav>
       <div class="sidebar-status"><div><i></i> <strong id="connection-label">Connecting to LGY Bot</strong></div><span id="connection-note">Waiting for secure synchronization</span></div>
     </aside>
@@ -37,7 +37,7 @@
             <p class="discord-note">Commands are queued securely and executed by LGY Bot on Bot-Hosting.net.</p>
           </aside>
         </div>
-        <section id="whitelist-view" class="panel hidden"><div class="panel-heading"><div><p class="eyebrow">Whitelist workspace</p><h3>Applications awaiting action</h3></div><button id="refresh-whitelist" class="text-button">Refresh ↻</button></div><div class="table-wrap"><table><thead><tr><th>Applicant</th><th>Submitted</th><th>Vouches</th><th>Status</th><th></th></tr></thead><tbody id="pending-applications-body"></tbody></table></div></section>
+        <section id="whitelist-view" class="panel hidden"><div class="panel-heading archive-heading"><div><p class="eyebrow">Whitelist archive</p><h3>All submitted whitelist requests</h3></div><div class="archive-tools"><input id="whitelist-search" type="search" placeholder="Search name, Discord, Steam, status…" aria-label="Search whitelist applications"><button id="refresh-whitelist" class="text-button">Refresh ↻</button></div></div><div class="table-wrap"><table><thead><tr><th>Applicant</th><th>Submitted</th><th>Discord Username</th><th>Discord ID</th><th>Steam URL</th><th>Vouches</th><th>Status</th></tr></thead><tbody id="whitelist-archive-body"></tbody></table></div></section>
         <section id="tickets-view" class="hidden"><div class="panel"><div class="panel-heading"><div><p class="eyebrow">Read-only ticket viewer</p><h3>Support tickets</h3></div><button id="refresh-tickets" class="text-button">Refresh ↻</button></div><div class="ticket-layout"><div id="ticket-list" class="ticket-list"></div><article id="ticket-conversation" class="ticket-conversation"><p class="empty-state">Select a ticket to view its Discord conversation.</p></article></div></div></section>
       </div>
     </section>

@@ -14,4 +14,13 @@
 .ticket-message p { margin: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; line-height: 1.5; }
 .ticket-message a { display: block; color: #8a650b; font-size: 9px; }
 .danger-text { color: #b52f3c; }
+.archive-heading { gap: 18px; }
+.archive-tools { display: flex; align-items: center; gap: 14px; }
+.archive-tools input { width: min(390px, 38vw); margin: 0; }
+#whitelist-view table { min-width: 1180px; }
+#whitelist-view td { white-space: normal; }
+#whitelist-view td:nth-child(4) code { font-size: 9px; user-select: all; }
+#whitelist-view td:nth-child(5) { max-width: 280px; overflow-wrap: anywhere; }
+#whitelist-view td:nth-child(5) a { color: #8a650b; }
 @media (max-width: 760px) { .ticket-layout { grid-template-columns: 1fr; } .ticket-list { border-right: 0; border-bottom: 1px solid var(--line); } }
+@media (max-width: 760px) { .archive-heading { align-items: stretch; flex-direction: column; } .archive-tools input { width: 100%; } }
