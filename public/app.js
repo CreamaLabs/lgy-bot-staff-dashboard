@@ -67,6 +67,7 @@ async function init() {
 
 $$('[data-command]').forEach((button) => button.addEventListener('click', () => queueCommand(button.dataset.command)));
 $$('[data-modal]').forEach((button) => button.addEventListener('click', () => $(`#${button.dataset.modal}`).showModal()));
+$$('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => button.closest('dialog')?.close()));
 $('#refresh-apps').addEventListener('click', () => loadApplications(true));
 $('#approve-button').addEventListener('click', () => queueCommand('approve_application', { applicationId: $('#review-id').value }));
 $('#deny-button').addEventListener('click', () => { const reason = $('#denial-reason').value.trim(); if (!reason) return toast('Enter a denial reason first.', true); queueCommand('deny_application', { applicationId: $('#review-id').value, reason }); });
