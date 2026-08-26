@@ -2,8 +2,7 @@ const COOKIE_NAME = 'lgy_staff_session';
 const STATE_COOKIE = 'lgy_oauth_state';
 const SESSION_MAX_AGE = 60 * 60 * 8;
 const COMMAND_TYPES = new Set([
-  'post_apply_panel', 'post_ticket_panel', 'post_streamer_registration_panel',
-  'post_streamer_stats_panel', 'post_streamer_fallback_panel',
+  'post_apply_panel', 'post_ticket_panel',
   'approve_application', 'deny_application', 'announcement',
   'reset_testing_data',
 ]);
@@ -114,13 +113,15 @@ async function handleApi(request, env, pathname) {
   const session = await readSession(request, env);
   if (!session) return json({ error: 'Sign in with an authorized Discord staff account.' }, 401);
   if (request.method !== 'GET' && !sameOrigin(request)) return json({ error: 'Invalid request origin.' }, 403);
-  if (pathname === '/api/session' && request.method === 'GET') return json({ user: session });
+  if (pathname === '/api/session' && request.method === 'GET') return json({ user: session, isOwner: Boolean(env.DISCORD_OWNER_USER_ID && session.id === env.DISCORD_OWNER_USER_ID) });
   if (pathname === '/api/applications' && request.method === 'GET') return storeRequest(env, '/applications');
+  if (pathname === '/api/tickets' && request.method === 'GET') return storeRequest(env, '/tickets');
   if (pathname === '/api/commands' && request.method === 'POST') {
     const body = await request.json().catch(() => null);
     if (!body || !COMMAND_TYPES.has(body.type)) return json({ error: 'Unsupported command.' }, 400);
     if (body.type === 'deny_application' && !String(body.payload?.reason || '').trim()) return json({ error: 'A denial reason is required.' }, 400);
     if (body.type === 'reset_testing_data' && body.payload?.confirmation !== 'RESET TEST DATA') return json({ error: 'Type RESET TEST DATA exactly to authorize the cleanup.' }, 400);
+    if (body.type === 'reset_testing_data' && (!env.DISCORD_OWNER_USER_ID || session.id !== env.DISCORD_OWNER_USER_ID)) return json({ error: 'Only the configured bot owner can reset testing data.' }, 403);
     return storeRequest(env, '/commands', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, requestedBy: session.id, requestedByName: session.displayName }) });
   }
   return json({ error: 'Not found.' }, 404);
@@ -129,6 +130,7 @@ async function handleApi(request, env, pathname) {
 async function handleBotApi(request, env, pathname) {
   if (!env.BOT_SYNC_SECRET || request.headers.get('authorization') !== `Bearer ${env.BOT_SYNC_SECRET}`) return json({ error: 'Unauthorized bot sync request.' }, 401);
   if (pathname === '/api/sync/applications' && request.method === 'POST') return storeRequest(env, '/applications', { method: 'POST', headers: { 'content-type': 'application/json' }, body: await request.text() });
+  if (pathname === '/api/sync/tickets' && request.method === 'POST') return storeRequest(env, '/tickets', { method: 'POST', headers: { 'content-type': 'application/json' }, body: await request.text() });
   if (pathname === '/api/bot/commands' && request.method === 'GET') return storeRequest(env, '/commands/pending');
   const match = pathname.match(/^\/api\/bot\/commands\/([^/]+)\/result$/);
   if (match && request.method === 'POST') return storeRequest(env, `/commands/${encodeURIComponent(match[1])}/result`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: await request.text() });
@@ -151,6 +153,18 @@ export class DashboardStore {
       for (const app of items) if (app?.id !== undefined) await storage.put(`app:${app.id}`, { ...app, dashboardSyncedAt: Date.now() });
       return json({ ok: true, count: items.length });
     }
+    if (url.pathname === '/tickets' && request.method === 'GET') {
+      const entries = await storage.list({ prefix: 'ticket:' });
+      return json({ tickets: [...entries.values()].sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0)) });
+    }
+    if (url.pathname === '/tickets' && request.method === 'POST') {
+      const body = await request.json();
+      const tickets = Array.isArray(body.tickets) ? body.tickets : [];
+      const previous = await storage.list({ prefix: 'ticket:' });
+      if (previous.size) await storage.delete([...previous.keys()]);
+      for (const ticket of tickets) if (ticket?.channelId) await storage.put(`ticket:${ticket.channelId}`, ticket);
+      return json({ ok: true, count: tickets.length });
+    }
     if (url.pathname === '/commands' && request.method === 'POST') {
       const body = await request.json();
       const command = { id: crypto.randomUUID(), type: body.type, payload: body.payload || {}, requestedBy: body.requestedBy, requestedByName: body.requestedByName, status: 'pending', createdAt: Date.now(), updatedAt: Date.now() };
@@ -172,8 +186,9 @@ export class DashboardStore {
       const result = await request.json();
       if (command.type === 'reset_testing_data' && result.ok) {
         const applications = await storage.list({ prefix: 'app:' });
+        const tickets = await storage.list({ prefix: 'ticket:' });
         const commands = await storage.list({ prefix: 'command:' });
-        const keys = [...applications.keys(), ...commands.keys()].filter((item) => item !== key);
+        const keys = [...applications.keys(), ...tickets.keys(), ...commands.keys()].filter((item) => item !== key);
         if (keys.length) await storage.delete(keys);
       }
       await storage.put(key, { ...command, status: result.ok ? 'completed' : 'failed', result, updatedAt: Date.now() });
@@ -189,7 +204,7 @@ export default {
     if (pathname === '/auth/login') return handleLogin(request, env);
     if (pathname === '/auth/callback') return handleCallback(request, env);
     if (pathname === '/auth/logout') return new Response(null, { status: 302, headers: { location: '/', 'set-cookie': clearCookie(COOKIE_NAME) } });
-    if (pathname.startsWith('/api/bot/') || pathname === '/api/sync/applications') return handleBotApi(request, env, pathname);
+    if (pathname.startsWith('/api/bot/') || pathname === '/api/sync/applications' || pathname === '/api/sync/tickets') return handleBotApi(request, env, pathname);
     if (pathname.startsWith('/api/')) return handleApi(request, env, pathname);
     return env.ASSETS.fetch(request);
   },
