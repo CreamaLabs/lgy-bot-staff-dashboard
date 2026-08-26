@@ -3,6 +3,8 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 let applications = [];
 let tickets = [];
 let presenceTimer;
+let ticketCategoryFilter = 'all';
+let generatedReport = null;
 
 function toast(message, error = false) {
   const element = $('#toast'); element.textContent = message; element.className = `toast show${error ? ' error' : ''}`;
@@ -49,10 +51,56 @@ function renderTicketConversation(ticket) {
 
 function renderTickets() {
   const list = $('#ticket-list');
-  if (!tickets.length) { list.innerHTML = '<p class="empty-state">No synchronized tickets.</p>'; $('#ticket-conversation').innerHTML = '<p class="empty-state">No ticket conversation to display.</p>'; return; }
-  list.innerHTML = tickets.map((ticket, index) => `<button data-ticket-index="${index}"><strong>${escapeHtml(ticket.channelName)}</strong><span>${escapeHtml(ticket.categoryLabel || ticket.categoryId)}</span><small>${ticketStatusLabel(ticket.dashboardStatus)}</small></button>`).join('');
-  $$('[data-ticket-index]').forEach((button) => button.addEventListener('click', () => renderTicketConversation(tickets[Number(button.dataset.ticketIndex)])));
-  renderTicketConversation(tickets[0]);
+  const visible = ticketCategoryFilter === 'all' ? tickets : tickets.filter((ticket) => ticket.categoryId === ticketCategoryFilter);
+  if (!visible.length) { list.innerHTML = '<p class="empty-state">No tickets in this category.</p>'; $('#ticket-conversation').innerHTML = '<p class="empty-state">No ticket conversation to display.</p>'; return; }
+  list.innerHTML = visible.map((ticket, index) => `<button data-ticket-index="${index}"><strong>${escapeHtml(ticket.channelName)}</strong><span>${escapeHtml(ticket.categoryLabel || ticket.categoryId)}</span><small>${ticketStatusLabel(ticket.dashboardStatus)}</small></button>`).join('');
+  $$('[data-ticket-index]').forEach((button) => button.addEventListener('click', () => renderTicketConversation(visible[Number(button.dataset.ticketIndex)])));
+  renderTicketConversation(visible[0]);
+}
+
+function reportPeriod() {
+  const range = $('#report-range').value; const now = new Date();
+  if (range === 'all') return { start: 0, end: Infinity, label: 'All time' };
+  if (range === 'month') return { start: new Date(now.getFullYear(), now.getMonth(), 1).getTime(), end: Infinity, label: 'Current month' };
+  if (range === 'custom') {
+    const startValue = $('#report-start').value; const endValue = $('#report-end').value;
+    if (!startValue || !endValue) throw new Error('Select both a start and end date.');
+    const start = new Date(`${startValue}T00:00:00`).getTime(); const end = new Date(`${endValue}T23:59:59.999`).getTime();
+    if (start > end) throw new Error('Start date must be before the end date.');
+    return { start, end, label: `${startValue} to ${endValue}` };
+  }
+  const days = Number(range); return { start: Date.now() - days * 86400000, end: Infinity, label: `Last ${days} days` };
+}
+
+function csvCell(value) { return `"${String(value ?? '').replaceAll('"', '""')}"`; }
+
+function generateReport() {
+  try {
+    const type = $('#report-type').value; const period = reportPeriod(); const category = $('#report-category').value;
+    let headers; let rows; let title;
+    if (type === 'whitelist') {
+      title = 'Whitelist Requests Report'; headers = ['Application', 'Applicant', 'Submitted', 'Discord Username', 'Discord ID', 'Steam URL', 'Vouches', 'Status'];
+      rows = applications.filter((app) => Number(app.submittedAt) >= period.start && Number(app.submittedAt) <= period.end).map((app) => [`#${String(app.id).padStart(4, '0')}`, `${app.firstName || ''} ${app.lastName || ''}`.trim(), new Date(app.submittedAt).toLocaleString(), app.discordUsername || '', app.applicantId || '', app.steamProfileUrl || '', Array.isArray(app.vouches) ? app.vouches.length : 0, app.status || 'pending']);
+    } else {
+      title = 'Support Tickets Report'; headers = ['Ticket', 'Category', 'Discord ID', 'Opened', 'Closed', 'Status', 'Messages'];
+      rows = tickets.filter((ticket) => (category === 'all' || ticket.categoryId === category) && Number(ticket.createdAt) >= period.start && Number(ticket.createdAt) <= period.end).map((ticket) => [ticket.channelName, ticket.categoryLabel || ticket.categoryId, ticket.userId || '', new Date(ticket.createdAt).toLocaleString(), ticket.closedAt ? new Date(ticket.closedAt).toLocaleString() : '', ticketStatusLabel(ticket.dashboardStatus), Array.isArray(ticket.conversation) ? ticket.conversation.length : 0]);
+    }
+    generatedReport = { title, period: period.label, category: type === 'tickets' ? $('#report-category').selectedOptions[0].textContent : 'All whitelist requests', headers, rows, generatedAt: new Date().toLocaleString() };
+    $('#report-result').innerHTML = `<div class="report-summary"><div><p class="eyebrow">${escapeHtml(generatedReport.period)}</p><h3>${escapeHtml(title)}</h3><span>${escapeHtml(generatedReport.category)} • ${rows.length} record(s)</span></div></div><div class="table-wrap"><table><thead><tr>${headers.map((item) => `<th>${escapeHtml(item)}</th>`).join('')}</tr></thead><tbody>${rows.length ? rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${headers.length}" class="empty-state">No records match this report.</td></tr>`}</tbody></table></div>`;
+    $('#report-actions').classList.remove('hidden');
+  } catch (error) { toast(error.message, true); }
+}
+
+function downloadReportCsv() {
+  if (!generatedReport) return;
+  const csv = [generatedReport.headers, ...generatedReport.rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
+  const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); link.download = `${generatedReport.title.toLowerCase().replaceAll(' ', '-')}-${Date.now()}.csv`; link.click(); URL.revokeObjectURL(link.href);
+}
+
+function printReport() {
+  if (!generatedReport) return;
+  const popup = window.open('', '_blank'); if (!popup) return toast('Allow pop-ups to print the report.', true);
+  popup.document.write(`<!doctype html><title>${escapeHtml(generatedReport.title)}</title><style>body{font:12px Arial;padding:28px;color:#111}h1{margin-bottom:4px}p{color:#555}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:8px;border:1px solid #ccc;text-align:left;vertical-align:top}th{background:#f3f3f3}@media print{body{padding:0}}</style><h1>${escapeHtml(generatedReport.title)}</h1><p>${escapeHtml(generatedReport.period)} • ${escapeHtml(generatedReport.category)} • Generated ${escapeHtml(generatedReport.generatedAt)}</p><table><thead><tr>${generatedReport.headers.map((item) => `<th>${escapeHtml(item)}</th>`).join('')}</tr></thead><tbody>${generatedReport.rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table>`); popup.document.close(); popup.focus(); popup.print();
 }
 
 async function loadTickets(showToast = false) {
@@ -117,13 +165,20 @@ $$('[data-view]').forEach((button) => button.addEventListener('click', () => {
   $$('.overview-view').forEach((item) => item.classList.toggle('hidden', view !== 'overview'));
   $('#whitelist-view').classList.toggle('hidden', view !== 'whitelist');
   $('#tickets-view').classList.toggle('hidden', view !== 'tickets');
+  $('#reports-view').classList.toggle('hidden', view !== 'reports');
   if (view === 'tickets') loadTickets();
 }));
+$$('[data-ticket-category]').forEach((button) => button.addEventListener('click', () => { ticketCategoryFilter = button.dataset.ticketCategory; $$('[data-ticket-category]').forEach((item) => item.classList.remove('active')); button.classList.add('active'); $('[data-view="tickets"]').click(); renderTickets(); }));
 $$('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => button.closest('dialog')?.close()));
 $('#refresh-apps').addEventListener('click', () => loadApplications(true));
 $('#refresh-whitelist').addEventListener('click', () => loadApplications(true));
 $('#whitelist-search').addEventListener('input', renderWhitelistArchive);
 $('#refresh-tickets').addEventListener('click', () => loadTickets(true));
+$('#report-type').addEventListener('change', () => $('#report-category-label').classList.toggle('hidden', $('#report-type').value !== 'tickets'));
+$('#report-range').addEventListener('change', () => $('#custom-date-fields').classList.toggle('hidden', $('#report-range').value !== 'custom'));
+$('#generate-report').addEventListener('click', generateReport);
+$('#download-report-csv').addEventListener('click', downloadReportCsv);
+$('#print-report').addEventListener('click', printReport);
 $('#approve-button').addEventListener('click', () => queueCommand('approve_application', { applicationId: $('#review-id').value }));
 $('#deny-button').addEventListener('click', () => { const reason = $('#denial-reason').value.trim(); if (!reason) return toast('Enter a denial reason first.', true); queueCommand('deny_application', { applicationId: $('#review-id').value, reason }); });
 $('#announcement-send').addEventListener('click', () => { const channelId = $('#announcement-channel').value.trim(); const title = $('#announcement-title').value.trim(); if (!/^\d{15,22}$/.test(channelId) || !title) return toast('Enter a valid Discord channel ID and title.', true); queueCommand('announcement', { channelId, title, description: $('#announcement-description').value.trim(), mediaUrl: $('#announcement-media').value.trim(), sticky: $('#announcement-sticky').checked }); });
