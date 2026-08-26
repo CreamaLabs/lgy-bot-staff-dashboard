@@ -21,6 +21,9 @@
 .presence-list { display: grid; gap: 7px; margin-top: 12px; }
 .presence-list div { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 700; }
 .presence-list i { width: 7px; height: 7px; border-radius: 50%; background: #43c978; box-shadow: 0 0 0 3px #43c97818; }
+.presence-list .offline i { background: #d94a58; box-shadow: 0 0 0 3px #d94a5818; }
+.presence-list span strong, .presence-list span small { display: block; }
+.presence-list span small { margin-top: 2px; color: var(--muted); font-size: 8px; font-weight: 400; }
 .presence-list > span { color: var(--muted); font-size: 9px; }
 .archive-heading { gap: 18px; }
 .archive-tools { display: flex; align-items: center; gap: 14px; }

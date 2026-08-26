@@ -65,9 +65,9 @@ async function updatePresence() {
     await api('/api/presence', { method: 'POST', body: '{}' });
     const data = await api('/api/presence');
     $('#connected-admin-count').textContent = data.count || 0;
-    $('#connected-admin-list').innerHTML = (data.connected || []).length
-      ? data.connected.map((staff) => `<div><i></i><span>${escapeHtml(staff.displayName || staff.username)}</span></div>`).join('')
-      : '<span>No active dashboard admins.</span>';
+    $('#connected-admin-list').innerHTML = (data.staff || []).length
+      ? data.staff.map((staff) => `<div class="${staff.online ? 'online' : 'offline'}"><i></i><span><strong>${escapeHtml(staff.displayName || staff.username)}</strong><small>${staff.online ? 'Connected now' : `Last active ${formatAge(staff.lastSeen)}`}</small></span></div>`).join('')
+      : '<span>No dashboard connection history yet.</span>';
   } catch (error) { console.warn('Presence update failed:', error.message); }
 }
 
