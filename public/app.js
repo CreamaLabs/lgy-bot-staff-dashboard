@@ -72,4 +72,10 @@ $('#refresh-apps').addEventListener('click', () => loadApplications(true));
 $('#approve-button').addEventListener('click', () => queueCommand('approve_application', { applicationId: $('#review-id').value }));
 $('#deny-button').addEventListener('click', () => { const reason = $('#denial-reason').value.trim(); if (!reason) return toast('Enter a denial reason first.', true); queueCommand('deny_application', { applicationId: $('#review-id').value, reason }); });
 $('#announcement-send').addEventListener('click', () => { const channelId = $('#announcement-channel').value.trim(); const title = $('#announcement-title').value.trim(); if (!/^\d{15,22}$/.test(channelId) || !title) return toast('Enter a valid Discord channel ID and title.', true); queueCommand('announcement', { channelId, title, description: $('#announcement-description').value.trim(), mediaUrl: $('#announcement-media').value.trim(), sticky: $('#announcement-sticky').checked }); });
+$('#reset-testing-data').addEventListener('click', () => {
+  const confirmation = $('#reset-confirmation').value;
+  if (confirmation !== 'RESET TEST DATA') return toast('Type RESET TEST DATA exactly before continuing.', true);
+  if (!confirm('Final warning: permanently delete ALL whitelist and ticket testing data?')) return;
+  queueCommand('reset_testing_data', { confirmation });
+});
 init();
