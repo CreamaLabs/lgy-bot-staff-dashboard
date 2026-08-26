@@ -116,6 +116,8 @@ async function handleApi(request, env, pathname) {
   if (pathname === '/api/session' && request.method === 'GET') return json({ user: session, isOwner: Boolean(env.DISCORD_OWNER_USER_ID && session.id === env.DISCORD_OWNER_USER_ID) });
   if (pathname === '/api/applications' && request.method === 'GET') return storeRequest(env, '/applications');
   if (pathname === '/api/tickets' && request.method === 'GET') return storeRequest(env, '/tickets');
+  if (pathname === '/api/presence' && request.method === 'GET') return storeRequest(env, '/presence');
+  if (pathname === '/api/presence' && request.method === 'POST') return storeRequest(env, '/presence', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: session.id, displayName: session.displayName, username: session.username, avatar: session.avatar }) });
   if (pathname === '/api/commands' && request.method === 'POST') {
     const body = await request.json().catch(() => null);
     if (!body || !COMMAND_TYPES.has(body.type)) return json({ error: 'Unsupported command.' }, 400);
@@ -164,6 +166,24 @@ export class DashboardStore {
       if (previous.size) await storage.delete([...previous.keys()]);
       for (const ticket of tickets) if (ticket?.channelId) await storage.put(`ticket:${ticket.channelId}`, ticket);
       return json({ ok: true, count: tickets.length });
+    }
+    if (url.pathname === '/presence' && request.method === 'POST') {
+      const staff = await request.json();
+      await storage.put(`presence:${staff.id}`, { ...staff, lastSeen: Date.now() });
+      return json({ ok: true });
+    }
+    if (url.pathname === '/presence' && request.method === 'GET') {
+      const now = Date.now();
+      const entries = await storage.list({ prefix: 'presence:' });
+      const connected = [];
+      const expired = [];
+      for (const [key, staff] of entries) {
+        if (now - Number(staff.lastSeen || 0) <= 75000) connected.push(staff);
+        else expired.push(key);
+      }
+      if (expired.length) await storage.delete(expired);
+      connected.sort((a, b) => String(a.displayName).localeCompare(String(b.displayName)));
+      return json({ count: connected.length, connected });
     }
     if (url.pathname === '/commands' && request.method === 'POST') {
       const body = await request.json();
