@@ -169,21 +169,26 @@ export class DashboardStore {
     }
     if (url.pathname === '/presence' && request.method === 'POST') {
       const staff = await request.json();
-      await storage.put(`presence:${staff.id}`, { ...staff, lastSeen: Date.now() });
+      const key = `presence:${staff.id}`;
+      const now = Date.now();
+      const previous = await storage.get(key);
+      const connectedAt = !previous || now - Number(previous.lastSeen || 0) > 75000 ? now : previous.connectedAt;
+      await storage.put(key, { ...staff, connectedAt, lastSeen: now });
       return json({ ok: true });
     }
     if (url.pathname === '/presence' && request.method === 'GET') {
       const now = Date.now();
       const entries = await storage.list({ prefix: 'presence:' });
-      const connected = [];
+      const staff = [];
       const expired = [];
-      for (const [key, staff] of entries) {
-        if (now - Number(staff.lastSeen || 0) <= 75000) connected.push(staff);
+      for (const [key, member] of entries) {
+        const age = now - Number(member.lastSeen || 0);
+        if (age <= 30 * 24 * 60 * 60 * 1000) staff.push({ ...member, online: age <= 75000 });
         else expired.push(key);
       }
       if (expired.length) await storage.delete(expired);
-      connected.sort((a, b) => String(a.displayName).localeCompare(String(b.displayName)));
-      return json({ count: connected.length, connected });
+      staff.sort((a, b) => Number(b.online) - Number(a.online) || Number(b.lastSeen) - Number(a.lastSeen));
+      return json({ count: staff.filter((member) => member.online).length, staff });
     }
     if (url.pathname === '/commands' && request.method === 'POST') {
       const body = await request.json();
