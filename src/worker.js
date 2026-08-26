@@ -5,6 +5,7 @@ const COMMAND_TYPES = new Set([
   'post_apply_panel', 'post_ticket_panel', 'post_streamer_registration_panel',
   'post_streamer_stats_panel', 'post_streamer_fallback_panel',
   'approve_application', 'deny_application', 'announcement',
+  'reset_testing_data',
 ]);
 
 function json(data, status = 200, headers = {}) {
@@ -119,6 +120,7 @@ async function handleApi(request, env, pathname) {
     const body = await request.json().catch(() => null);
     if (!body || !COMMAND_TYPES.has(body.type)) return json({ error: 'Unsupported command.' }, 400);
     if (body.type === 'deny_application' && !String(body.payload?.reason || '').trim()) return json({ error: 'A denial reason is required.' }, 400);
+    if (body.type === 'reset_testing_data' && body.payload?.confirmation !== 'RESET TEST DATA') return json({ error: 'Type RESET TEST DATA exactly to authorize the cleanup.' }, 400);
     return storeRequest(env, '/commands', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, requestedBy: session.id, requestedByName: session.displayName }) });
   }
   return json({ error: 'Not found.' }, 404);
@@ -168,6 +170,12 @@ export class DashboardStore {
       const command = await storage.get(key);
       if (!command) return json({ error: 'Unknown command.' }, 404);
       const result = await request.json();
+      if (command.type === 'reset_testing_data' && result.ok) {
+        const applications = await storage.list({ prefix: 'app:' });
+        const commands = await storage.list({ prefix: 'command:' });
+        const keys = [...applications.keys(), ...commands.keys()].filter((item) => item !== key);
+        if (keys.length) await storage.delete(keys);
+      }
       await storage.put(key, { ...command, status: result.ok ? 'completed' : 'failed', result, updatedAt: Date.now() });
       return json({ ok: true });
     }
