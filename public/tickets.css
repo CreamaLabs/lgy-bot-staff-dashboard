@@ -1,0 +1,17 @@
+.ticket-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 560px; }
+.ticket-list { padding: 12px; border-right: 1px solid var(--line); overflow: auto; }
+.ticket-list > button { width: 100%; display: grid; gap: 5px; margin-bottom: 8px; padding: 13px; border: 1px solid var(--line); border-radius: 9px; background: #fafaf8; text-align: left; cursor: pointer; }
+.ticket-list > button:hover { border-color: #e3b63d; background: #fff8df; }
+.ticket-list strong { font-size: 11px; }
+.ticket-list span, .ticket-list small { color: var(--muted); font-size: 9px; }
+.ticket-conversation { min-width: 0; padding: 20px; }
+.ticket-conversation header { padding-bottom: 15px; border-bottom: 1px solid var(--line); }
+.ticket-conversation h3 { display: inline-block; margin: 0 10px 0 0; }
+.conversation-scroll { max-height: 600px; overflow: auto; padding-top: 10px; }
+.ticket-message { margin: 10px 0; padding: 12px; background: #f8f8f5; border-radius: 9px; }
+.ticket-message strong { font-size: 11px; }
+.ticket-message time { margin-left: 8px; color: #999; font-size: 8px; }
+.ticket-message p { margin: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; line-height: 1.5; }
+.ticket-message a { display: block; color: #8a650b; font-size: 9px; }
+.danger-text { color: #b52f3c; }
+@media (max-width: 760px) { .ticket-layout { grid-template-columns: 1fr; } .ticket-list { border-right: 0; border-bottom: 1px solid var(--line); } }

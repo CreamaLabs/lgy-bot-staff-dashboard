@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="Secure LGY Bot staff console for Ligaya Street RP.">
-  <title>LGY Bot — Staff Console</title><link rel="icon" href="/lgy-bot.png"><link rel="stylesheet" href="/styles.css">
+  <title>LGY Bot — Staff Console</title><link rel="icon" href="/lgy-bot.png"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/tickets.css">
 </head>
 <body>
   <section id="login-screen" class="login-screen">
@@ -13,37 +13,38 @@
     <aside class="sidebar">
       <div class="brand"><img src="/lgy-bot.png" alt="LGY Bot"><div><strong>LGY Bot</strong><span>Staff Console</span></div></div>
       <nav aria-label="Dashboard navigation"><p class="nav-label">Workspace</p>
-        <button class="nav-item active" data-view="overview"><span>▦</span>Overview</button><button class="nav-item" data-view="whitelist"><span>♙</span>Whitelist</button><button class="nav-item" data-command="post_apply_panel"><span>◫</span>Panel Manager</button><button class="nav-item" data-modal="announcement-modal"><span>◉</span>Announcements</button><button class="nav-item" data-command="post_ticket_panel"><span>◇</span>Tickets</button><button class="nav-item" data-modal="streamer-modal"><span>↗</span>Streamers</button>
+        <button class="nav-item active" data-view="overview"><span>▦</span>Overview</button><button class="nav-item" data-view="whitelist"><span>♙</span>Whitelist</button><button class="nav-item" data-command="post_apply_panel"><span>◫</span>Panel Manager</button><button class="nav-item" data-modal="announcement-modal"><span>◉</span>Announcements</button><button class="nav-item" data-view="tickets"><span>◇</span>Tickets</button>
       </nav>
       <div class="sidebar-status"><div><i></i> <strong id="connection-label">Connecting to LGY Bot</strong></div><span id="connection-note">Waiting for secure synchronization</span></div>
     </aside>
     <section class="workspace">
       <header class="topbar"><div><p class="eyebrow">Ligaya Street RP</p><h1>Command center</h1></div><div class="staff-chip"><span id="staff-initials">LG</span><div><strong id="staff-name">Staff</strong><small>Authorized via Discord</small></div><a href="/auth/logout" title="Sign out">↗</a></div></header>
       <div class="content">
-        <section class="hero-card"><div><p class="eyebrow gold">Secure staff portal</p><h2 id="greeting">Welcome, Staff Team.</h2><p>Review live whitelist applications and send approved commands securely to LGY Bot.</p></div><img src="/lgy-bot.png" alt=""></section>
-        <section class="stats-grid" aria-label="Server overview">
+        <section class="hero-card overview-view"><div><p class="eyebrow gold">Secure staff portal</p><h2 id="greeting">Welcome, Staff Team.</h2><p>Review live whitelist applications and send approved commands securely to LGY Bot.</p></div><img src="/lgy-bot.png" alt=""></section>
+        <section class="stats-grid overview-view" aria-label="Server overview">
           <article><b>♙</b><div><span>Pending applications</span><strong id="pending-count">—</strong><small>Awaiting staff review</small></div></article>
           <article><b>✓</b><div><span>Approved this week</span><strong id="approved-count">—</strong><small class="positive">Live from LGY Bot</small></div></article>
           <article><b>✕</b><div><span>Denied this week</span><strong id="denied-count">—</strong><small>Recorded decisions</small></div></article>
           <article><b class="live">●</b><div><span>Bot synchronization</span><strong id="sync-state">Waiting</strong><small id="sync-time">Bot connection required</small></div></article>
         </section>
-        <div class="dashboard-grid">
+        <div class="dashboard-grid overview-view">
           <section class="panel applications-panel"><div class="panel-heading"><div><p class="eyebrow">Whitelist queue</p><h3>Recent applications</h3></div><button id="refresh-apps" class="text-button">Refresh ↻</button></div><div class="table-wrap"><table><thead><tr><th>Applicant</th><th>Submitted</th><th>Vouches</th><th>Status</th><th></th></tr></thead><tbody id="applications-body"><tr><td colspan="5" class="empty-state">Waiting for LGY Bot to synchronize applications…</td></tr></tbody></table></div></section>
           <aside class="panel quick-panel"><div class="panel-heading"><div><p class="eyebrow">Discord tools</p><h3>Quick controls</h3></div></div>
             <button data-command="post_apply_panel"><span>◫</span><div><strong>Post whitelist panel</strong><small>Publish a fresh application panel</small></div><b>→</b></button>
             <button data-modal="announcement-modal"><span>◉</span><div><strong>Create announcement</strong><small>Send a server announcement</small></div><b>→</b></button>
             <button data-command="post_ticket_panel"><span>◇</span><div><strong>Post ticket panel</strong><small>Refresh the support entry panel</small></div><b>→</b></button>
-            <button data-modal="reset-modal" class="danger-tool"><span>!</span><div><strong>Reset testing data</strong><small>Completely clear whitelist and ticket test records</small></div><b>→</b></button>
+            <button data-modal="reset-modal" data-owner-only class="danger-tool hidden"><span>!</span><div><strong>Reset testing data</strong><small>Owner-only complete testing cleanup</small></div><b>→</b></button>
             <p class="discord-note">Commands are queued securely and executed by LGY Bot on Bot-Hosting.net.</p>
           </aside>
         </div>
+        <section id="whitelist-view" class="panel hidden"><div class="panel-heading"><div><p class="eyebrow">Whitelist workspace</p><h3>Applications awaiting action</h3></div><button id="refresh-whitelist" class="text-button">Refresh ↻</button></div><div class="table-wrap"><table><thead><tr><th>Applicant</th><th>Submitted</th><th>Vouches</th><th>Status</th><th></th></tr></thead><tbody id="pending-applications-body"></tbody></table></div></section>
+        <section id="tickets-view" class="hidden"><div class="panel"><div class="panel-heading"><div><p class="eyebrow">Read-only ticket viewer</p><h3>Support tickets</h3></div><button id="refresh-tickets" class="text-button">Refresh ↻</button></div><div class="ticket-layout"><div id="ticket-list" class="ticket-list"></div><article id="ticket-conversation" class="ticket-conversation"><p class="empty-state">Select a ticket to view its Discord conversation.</p></article></div></div></section>
       </div>
     </section>
   </main>
 
   <dialog id="review-modal"><form method="dialog"><button type="button" class="dialog-close" data-close-dialog>×</button><p class="eyebrow">Whitelist review</p><h3 id="review-title">Review application</h3><p id="review-details"></p><input type="hidden" id="review-id"><label>Denial reason <small>(required only when denying)</small><textarea id="denial-reason" maxlength="1000" placeholder="Explain why the application was denied..."></textarea></label><div class="dialog-actions"><button type="button" data-close-dialog class="secondary">Cancel</button><button type="button" id="deny-button" class="danger">Deny</button><button type="button" id="approve-button" class="primary">Approve</button></div></form></dialog>
   <dialog id="announcement-modal"><form method="dialog"><button type="button" class="dialog-close" data-close-dialog>×</button><p class="eyebrow">Discord announcement</p><h3>Create announcement</h3><label>Channel ID<input id="announcement-channel" required placeholder="Discord channel ID"></label><label>Title<input id="announcement-title" required maxlength="256"></label><label>Description<textarea id="announcement-description" maxlength="4000"></textarea></label><label>Image URL <small>(optional)</small><input id="announcement-media" type="url" placeholder="https://..."></label><label class="check-label"><input id="announcement-sticky" type="checkbox"> Keep as sticky announcement</label><div class="dialog-actions"><button type="button" data-close-dialog class="secondary">Cancel</button><button type="button" id="announcement-send" class="primary">Queue announcement</button></div></form></dialog>
-  <dialog id="streamer-modal"><form method="dialog"><button type="button" class="dialog-close" data-close-dialog>×</button><p class="eyebrow">Streamer tools</p><h3>Choose a panel</h3><div class="stacked-actions"><button type="button" data-command="post_streamer_registration_panel">Post registration panel</button><button type="button" data-command="post_streamer_stats_panel">Post statistics panel</button><button type="button" data-command="post_streamer_fallback_panel">Post fallback panel</button></div></form></dialog>
   <dialog id="reset-modal"><form method="dialog"><button type="button" class="dialog-close" data-close-dialog>×</button><p class="eyebrow danger-text">Permanent testing cleanup</p><h3>Reset all testing data</h3><p>This permanently removes whitelist records and messages, open ticket channels, archived ticket records, ticket logs, and transcripts. Panels, roles, configuration, and the security audit receipt are preserved.</p><label>Type <strong>RESET TEST DATA</strong> to continue<input id="reset-confirmation" autocomplete="off" placeholder="RESET TEST DATA"></label><div class="dialog-actions"><button type="button" data-close-dialog class="secondary">Cancel</button><button type="button" id="reset-testing-data" class="danger">Permanently reset</button></div></form></dialog>
   <div id="toast" class="toast" role="status"></div><script src="/app.js" defer></script>
 </body></html>

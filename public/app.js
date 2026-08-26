@@ -1,6 +1,7 @@
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 let applications = [];
+let tickets = [];
 
 function toast(message, error = false) {
   const element = $('#toast'); element.textContent = message; element.className = `toast show${error ? ' error' : ''}`;
@@ -29,6 +30,35 @@ function renderApplications() {
   $$('[data-review]').forEach((button) => button.addEventListener('click', () => openReview(button.dataset.review)));
 }
 
+function renderPendingApplications() {
+  const body = $('#pending-applications-body');
+  const pending = applications.filter((app) => app.status === 'pending');
+  if (!pending.length) { body.innerHTML = '<tr><td colspan="5" class="empty-state">No whitelist applications are currently awaiting action.</td></tr>'; return; }
+  body.innerHTML = pending.map((app) => `<tr><td><em>#${String(app.id).padStart(4, '0')}</em><strong>${escapeHtml(`${app.firstName || ''} ${app.lastName || ''}`.trim())}</strong></td><td>${formatAge(app.submittedAt)}</td><td><span class="count">${Array.isArray(app.vouches) ? app.vouches.length : 0}</span></td><td><span class="pill">Pending</span></td><td><button class="review" data-pending-review="${app.id}">Review</button></td></tr>`).join('');
+  $$('[data-pending-review]').forEach((button) => button.addEventListener('click', () => openReview(button.dataset.pendingReview)));
+}
+
+function ticketStatusLabel(status) { return status === 'in_progress' ? 'In progress' : status === 'closed' ? 'Closed' : 'Open'; }
+
+function renderTicketConversation(ticket) {
+  const panel = $('#ticket-conversation');
+  const messages = Array.isArray(ticket.conversation) ? ticket.conversation : [];
+  panel.innerHTML = `<header><p class="eyebrow">${escapeHtml(ticket.categoryLabel || ticket.categoryId)}</p><h3>${escapeHtml(ticket.channelName)}</h3><span class="pill ${ticket.dashboardStatus === 'closed' ? 'denied-pill' : ticket.dashboardStatus === 'in_progress' ? 'approved-pill' : ''}">${ticketStatusLabel(ticket.dashboardStatus)}</span></header><div class="conversation-scroll">${messages.length ? messages.map((message) => `<div class="ticket-message"><strong>${escapeHtml(message.authorTag || message.authorId)}</strong><time>${new Date(message.createdAt).toLocaleString()}</time>${message.content ? `<p>${escapeHtml(message.content)}</p>` : ''}${(message.attachments || []).map((item) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener">Attachment: ${escapeHtml(item.name)}</a>`).join('')}</div>`).join('') : '<p class="empty-state">No captured conversation is available for this ticket.</p>'}</div>`;
+}
+
+function renderTickets() {
+  const list = $('#ticket-list');
+  if (!tickets.length) { list.innerHTML = '<p class="empty-state">No synchronized tickets.</p>'; $('#ticket-conversation').innerHTML = '<p class="empty-state">No ticket conversation to display.</p>'; return; }
+  list.innerHTML = tickets.map((ticket, index) => `<button data-ticket-index="${index}"><strong>${escapeHtml(ticket.channelName)}</strong><span>${escapeHtml(ticket.categoryLabel || ticket.categoryId)}</span><small>${ticketStatusLabel(ticket.dashboardStatus)}</small></button>`).join('');
+  $$('[data-ticket-index]').forEach((button) => button.addEventListener('click', () => renderTicketConversation(tickets[Number(button.dataset.ticketIndex)])));
+  renderTicketConversation(tickets[0]);
+}
+
+async function loadTickets(showToast = false) {
+  try { const data = await api('/api/tickets'); tickets = data.tickets || []; renderTickets(); if (showToast) toast('Ticket conversations refreshed.'); }
+  catch (error) { toast(error.message, true); }
+}
+
 function updateStats() {
   const weekAgo = Date.now() - 7 * 86400000;
   $('#pending-count').textContent = applications.filter((app) => app.status === 'pending').length;
@@ -38,7 +68,7 @@ function updateStats() {
 
 async function loadApplications(showToast = false) {
   try {
-    const data = await api('/api/applications'); applications = data.applications || []; renderApplications(); updateStats();
+    const data = await api('/api/applications'); applications = data.applications || []; renderApplications(); renderPendingApplications(); updateStats();
     $('#sync-state').textContent = data.synced ? 'Live' : 'Waiting'; $('#sync-time').textContent = data.synced ? 'Secure bridge connected' : 'Bot restart required';
     $('#connection-label').textContent = data.synced ? 'LGY Bot synchronized' : 'Waiting for LGY Bot'; $('#connection-note').textContent = data.synced ? `${applications.length} records available` : 'Install the Bot-Hosting update';
     if (showToast) toast('Application list refreshed.');
@@ -46,7 +76,7 @@ async function loadApplications(showToast = false) {
 }
 
 async function queueCommand(type, payload = {}) {
-  const labels = { post_apply_panel: 'post a new whitelist panel', post_ticket_panel: 'post a new ticket panel', post_streamer_registration_panel: 'post the streamer registration panel', post_streamer_stats_panel: 'post the streamer statistics panel', post_streamer_fallback_panel: 'post the streamer fallback panel' };
+  const labels = { post_apply_panel: 'post a new whitelist panel', post_ticket_panel: 'post a new ticket panel' };
   if (labels[type] && !confirm(`Ask LGY Bot to ${labels[type]}?`)) return;
   try { await api('/api/commands', { method: 'POST', body: JSON.stringify({ type, payload }) }); toast('Command queued. LGY Bot will process it shortly.'); $$('dialog[open]').forEach((dialog) => dialog.close()); }
   catch (error) { toast(error.message, true); }
@@ -61,14 +91,25 @@ async function init() {
   try {
     const session = await api('/api/session'); const name = session.user.displayName || session.user.username;
     $('#staff-name').textContent = name; $('#staff-initials').textContent = name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase(); $('#greeting').textContent = `Welcome, ${name}.`;
-    $('#login-screen').classList.add('hidden'); $('#dashboard').classList.remove('hidden'); await loadApplications();
+    $$('[data-owner-only]').forEach((element) => element.classList.toggle('hidden', !session.isOwner));
+    $('#login-screen').classList.add('hidden'); $('#dashboard').classList.remove('hidden'); await Promise.all([loadApplications(), loadTickets()]);
   } catch { $('#login-screen').classList.remove('hidden'); }
 }
 
 $$('[data-command]').forEach((button) => button.addEventListener('click', () => queueCommand(button.dataset.command)));
 $$('[data-modal]').forEach((button) => button.addEventListener('click', () => $(`#${button.dataset.modal}`).showModal()));
+$$('[data-view]').forEach((button) => button.addEventListener('click', () => {
+  const view = button.dataset.view;
+  $$('.nav-item').forEach((item) => item.classList.remove('active')); button.classList.add('active');
+  $$('.overview-view').forEach((item) => item.classList.toggle('hidden', view !== 'overview'));
+  $('#whitelist-view').classList.toggle('hidden', view !== 'whitelist');
+  $('#tickets-view').classList.toggle('hidden', view !== 'tickets');
+  if (view === 'tickets') loadTickets();
+}));
 $$('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => button.closest('dialog')?.close()));
 $('#refresh-apps').addEventListener('click', () => loadApplications(true));
+$('#refresh-whitelist').addEventListener('click', () => loadApplications(true));
+$('#refresh-tickets').addEventListener('click', () => loadTickets(true));
 $('#approve-button').addEventListener('click', () => queueCommand('approve_application', { applicationId: $('#review-id').value }));
 $('#deny-button').addEventListener('click', () => { const reason = $('#denial-reason').value.trim(); if (!reason) return toast('Enter a denial reason first.', true); queueCommand('deny_application', { applicationId: $('#review-id').value, reason }); });
 $('#announcement-send').addEventListener('click', () => { const channelId = $('#announcement-channel').value.trim(); const title = $('#announcement-title').value.trim(); if (!/^\d{15,22}$/.test(channelId) || !title) return toast('Enter a valid Discord channel ID and title.', true); queueCommand('announcement', { channelId, title, description: $('#announcement-description').value.trim(), mediaUrl: $('#announcement-media').value.trim(), sticky: $('#announcement-sticky').checked }); });
