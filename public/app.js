@@ -34,7 +34,7 @@ function renderApplications() {
     const bPending = (b.status || 'pending') === 'pending' ? 0 : 1;
     return aPending - bPending || Number(b.submittedAt || 0) - Number(a.submittedAt || 0);
   });
-  body.innerHTML = prioritized.slice(0, 25).map((app) => `<tr><td><em>#${String(app.id).padStart(4, '0')}</em><strong>${escapeHtml(`${app.firstName || ''} ${app.lastName || ''}`.trim())}</strong></td><td>${formatAge(app.submittedAt)}</td><td><span class="count">${Array.isArray(app.vouches) ? app.vouches.length : 0}</span></td><td><span class="pill ${app.status === 'denied' ? 'denied-pill' : app.status === 'approved' ? 'approved-pill' : ''}">${escapeHtml(app.status || 'pending')}</span></td><td>${app.status === 'pending' ? `<button class="review" data-review="${app.id}">Review</button>` : ''}</td></tr>`).join('');
+  body.innerHTML = prioritized.slice(0, 25).map((app) => `<tr><td data-label="Applicant"><em>#${String(app.id).padStart(4, '0')}</em><strong>${escapeHtml(`${app.firstName || ''} ${app.lastName || ''}`.trim())}</strong></td><td data-label="Submitted">${formatAge(app.submittedAt)}</td><td data-label="Vouches"><span class="count">${Array.isArray(app.vouches) ? app.vouches.length : 0}</span></td><td data-label="Status"><span class="pill ${app.status === 'denied' ? 'denied-pill' : app.status === 'approved' ? 'approved-pill' : ''}">${escapeHtml(app.status || 'pending')}</span></td><td class="row-action">${app.status === 'pending' ? `<button class="review" data-review="${app.id}">Review</button>` : ''}</td></tr>`).join('');
   $$('[data-review]').forEach((button) => button.addEventListener('click', () => openReview(button.dataset.review)));
 }
 
@@ -43,7 +43,7 @@ function renderWhitelistArchive() {
   const query = ($('#whitelist-search')?.value || '').trim().toLowerCase();
   const visible = applications.filter((app) => [app.id, app.firstName, app.lastName, app.discordUsername, app.applicantId, app.steamProfileUrl, app.steamId64, app.status].join(' ').toLowerCase().includes(query));
   if (!visible.length) { body.innerHTML = `<tr><td colspan="7" class="empty-state">${query ? 'No whitelist request matches your search.' : 'No submitted whitelist requests yet.'}</td></tr>`; return; }
-  body.innerHTML = visible.map((app) => `<tr><td><em>#${String(app.id).padStart(4, '0')}</em><strong>${escapeHtml(`${app.firstName || ''} ${app.lastName || ''}`.trim())}</strong></td><td>${formatAge(app.submittedAt)}</td><td>${escapeHtml(app.discordUsername || '—')}</td><td><code>${escapeHtml(app.applicantId || '—')}</code></td><td>${app.steamProfileUrl ? `<a href="${escapeHtml(app.steamProfileUrl)}" target="_blank" rel="noopener">${escapeHtml(app.steamProfileUrl)}</a>` : '—'}</td><td><span class="count">${Array.isArray(app.vouches) ? app.vouches.length : 0}</span></td><td><span class="pill ${app.status === 'denied' ? 'denied-pill' : app.status === 'approved' ? 'approved-pill' : ''}">${escapeHtml(app.status || 'pending')}</span></td></tr>`).join('');
+  body.innerHTML = visible.map((app) => `<tr><td data-label="Applicant"><em>#${String(app.id).padStart(4, '0')}</em><strong>${escapeHtml(`${app.firstName || ''} ${app.lastName || ''}`.trim())}</strong></td><td data-label="Submitted">${formatAge(app.submittedAt)}</td><td data-label="Discord">${escapeHtml(app.discordUsername || '—')}</td><td data-label="Discord ID"><code>${escapeHtml(app.applicantId || '—')}</code></td><td data-label="Steam URL">${app.steamProfileUrl ? `<a href="${escapeHtml(app.steamProfileUrl)}" target="_blank" rel="noopener">${escapeHtml(app.steamProfileUrl)}</a>` : '—'}</td><td data-label="Vouches"><span class="count">${Array.isArray(app.vouches) ? app.vouches.length : 0}</span></td><td data-label="Status"><span class="pill ${app.status === 'denied' ? 'denied-pill' : app.status === 'approved' ? 'approved-pill' : ''}">${escapeHtml(app.status || 'pending')}</span></td></tr>`).join('');
 }
 
 function ticketStatusLabel(status) { return status === 'in_progress' ? 'In progress' : status === 'closed' ? 'Closed' : 'Open'; }
@@ -171,21 +171,29 @@ async function init() {
     const session = await api('/api/session'); const name = session.user.displayName || session.user.username;
     $('#staff-name').textContent = name; $('#staff-initials').textContent = name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase(); $('#greeting').textContent = `Welcome, ${name}.`;
     $$('[data-owner-only]').forEach((element) => element.classList.toggle('hidden', !session.isOwner));
-    $('#login-screen').classList.add('hidden'); $('#dashboard').classList.remove('hidden'); await Promise.all([loadApplications(), loadTickets(), updatePresence()]);
+    $('#login-screen').classList.add('hidden'); $('#dashboard').classList.remove('hidden'); $('#mobile-nav').classList.remove('hidden'); await Promise.all([loadApplications(), loadTickets(), updatePresence()]);
     clearInterval(presenceTimer); presenceTimer = setInterval(updatePresence, 30000);
   } catch { $('#login-screen').classList.remove('hidden'); }
 }
 
 $$('[data-command]').forEach((button) => button.addEventListener('click', () => queueCommand(button.dataset.command)));
 $$('[data-modal]').forEach((button) => button.addEventListener('click', () => $(`#${button.dataset.modal}`).showModal()));
-$$('[data-view]').forEach((button) => button.addEventListener('click', () => {
-  const view = button.dataset.view;
-  $$('.nav-item').forEach((item) => item.classList.remove('active')); button.classList.add('active');
+function showView(view) {
+  $$('[data-view]').forEach((item) => item.classList.toggle('active', item.dataset.view === view));
   $$('.overview-view').forEach((item) => item.classList.toggle('hidden', view !== 'overview'));
   $('#whitelist-view').classList.toggle('hidden', view !== 'whitelist');
   $('#tickets-view').classList.toggle('hidden', view !== 'tickets');
   $('#reports-view').classList.toggle('hidden', view !== 'reports');
   if (view === 'tickets') loadTickets();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+$$('[data-view]').forEach((button) => button.addEventListener('click', () => showView(button.dataset.view)));
+$$('[data-mobile-action="quick-controls"]').forEach((button) => button.addEventListener('click', () => {
+  showView('overview');
+  $$('#mobile-nav button').forEach((item) => item.classList.remove('active'));
+  button.classList.add('active');
+  requestAnimationFrame(() => $('.quick-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
 }));
 $$('[data-ticket-category]').forEach((button) => button.addEventListener('click', () => { ticketCategoryFilter = button.dataset.ticketCategory; $$('[data-ticket-category]').forEach((item) => item.classList.remove('active')); button.classList.add('active'); $('[data-view="tickets"]').click(); renderTickets(); }));
 $$('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => button.closest('dialog')?.close()));

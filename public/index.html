@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="Secure LGY Bot staff console for Ligaya Street RP.">
-  <title>LGY Bot — Staff Console</title><link rel="icon" href="/lgy-bot.png"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/tickets.css"><link rel="stylesheet" href="/overview.css">
+  <title>LGY Bot — Staff Console</title><link rel="icon" href="/lgy-bot.png"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/tickets.css"><link rel="stylesheet" href="/overview.css"><link rel="stylesheet" href="/mobile.css">
 </head>
 <body>
   <section id="login-screen" class="login-screen">
@@ -46,6 +46,14 @@
       </div>
     </section>
   </main>
+
+  <nav class="mobile-nav hidden" id="mobile-nav" aria-label="Mobile dashboard navigation">
+    <button class="active" data-view="overview"><span>▦</span><small>Overview</small></button>
+    <button data-view="whitelist"><span>♙</span><small>Whitelist</small></button>
+    <button data-mobile-action="quick-controls"><span>⚡</span><small>Controls</small></button>
+    <button data-view="tickets"><span>◇</span><small>Tickets</small></button>
+    <button data-view="reports"><span>▤</span><small>Reports</small></button>
+  </nav>
 
   <dialog id="review-modal"><form method="dialog"><button type="button" class="dialog-close" data-close-dialog>×</button><p class="eyebrow">Whitelist review</p><h3 id="review-title">Review application</h3><p id="review-details"></p><input type="hidden" id="review-id"><label>Denial reason <small>(required only when denying)</small><textarea id="denial-reason" maxlength="1000" placeholder="Explain why the application was denied..."></textarea></label><div class="dialog-actions"><button type="button" data-close-dialog class="secondary">Cancel</button><button type="button" id="deny-button" class="danger">Deny</button><button type="button" id="approve-button" class="primary">Approve</button></div></form></dialog>
   <dialog id="announcement-modal"><form method="dialog"><button type="button" class="dialog-close" data-close-dialog>×</button><p class="eyebrow">Discord announcement</p><h3>Create announcement</h3><label>Channel ID<input id="announcement-channel" required placeholder="Discord channel ID"></label><label>Title<input id="announcement-title" required maxlength="256"></label><label>Description<textarea id="announcement-description" maxlength="4000"></textarea></label><label>Image URL <small>(optional)</small><input id="announcement-media" type="url" placeholder="https://..."></label><label class="check-label"><input id="announcement-sticky" type="checkbox"> Keep as sticky announcement</label><div class="dialog-actions"><button type="button" data-close-dialog class="secondary">Cancel</button><button type="button" id="announcement-send" class="primary">Queue announcement</button></div></form></dialog>
