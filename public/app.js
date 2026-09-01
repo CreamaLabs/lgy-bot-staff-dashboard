@@ -179,6 +179,7 @@ async function init() {
 $$('[data-command]').forEach((button) => button.addEventListener('click', () => queueCommand(button.dataset.command)));
 $$('[data-modal]').forEach((button) => button.addEventListener('click', () => $(`#${button.dataset.modal}`).showModal()));
 function showView(view) {
+  $('#dashboard').classList.remove('mobile-controls-mode');
   $$('[data-view]').forEach((item) => item.classList.toggle('active', item.dataset.view === view));
   $$('.overview-view').forEach((item) => item.classList.toggle('hidden', view !== 'overview'));
   $('#whitelist-view').classList.toggle('hidden', view !== 'whitelist');
@@ -191,6 +192,7 @@ function showView(view) {
 $$('[data-view]').forEach((button) => button.addEventListener('click', () => showView(button.dataset.view)));
 $$('[data-mobile-action="quick-controls"]').forEach((button) => button.addEventListener('click', () => {
   showView('overview');
+  $('#dashboard').classList.add('mobile-controls-mode');
   $$('#mobile-nav button').forEach((item) => item.classList.remove('active'));
   button.classList.add('active');
   requestAnimationFrame(() => $('.quick-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));

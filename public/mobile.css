@@ -50,6 +50,35 @@
     scroll-margin-top: 14px;
   }
 
+  .quick-panel > .panel-heading,
+  .quick-panel > button,
+  .quick-panel > .discord-note {
+    display: none;
+  }
+
+  .mobile-controls-mode .hero-card,
+  .mobile-controls-mode .stats-grid,
+  .mobile-controls-mode .applications-panel {
+    display: none !important;
+  }
+
+  .mobile-controls-mode .dashboard-grid {
+    display: block;
+  }
+
+  .mobile-controls-mode .quick-panel > .panel-heading,
+  .mobile-controls-mode .quick-panel > button {
+    display: flex;
+  }
+
+  .mobile-controls-mode .quick-panel > .discord-note {
+    display: block;
+  }
+
+  .mobile-controls-mode .quick-panel .presence-box {
+    display: none;
+  }
+
   .panel-heading {
     min-height: 68px;
     padding: 15px 16px;
